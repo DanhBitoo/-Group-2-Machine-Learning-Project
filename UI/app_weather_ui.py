@@ -20,93 +20,42 @@ st.set_page_config(
 )
 
 # ================== GLOBAL CSS ==================
-st.markdown("""
+import base64
+from pathlib import Path
+
+def get_img_as_base64(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+img_path = Path(__file__).resolve().parent / "assets" / "hanoi1.jpg"
+
+try:
+    img_base64 = get_img_as_base64(img_path)
+    # Tạo CSS với ảnh base64
+    page_bg_img = f"""
     <style>
-    .stApp {
-        background-image: url("https://raw.githubusercontent.com/DanhBitoo/-Group-2-Machine-Learning-Project/main/UI/assets/hanoi1.jpg");
+    .stApp {{
+        background-image: url("data:image/jpg;base64,{img_base64}");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         background-attachment: fixed;
-    }
-    .overlay {
+    }}
+    /* ... giữ nguyên các class .overlay, .main-title khác của bạn ở dưới ... */
+    .overlay {{
         background: rgba(0, 0, 0, 0.45);
         border-radius: 24px;
         padding: 24px;
         margin-bottom: 20px;
-    }
-    .main-title {
-        font-size: 32px;
-        font-weight: 700;
-        color: #ffffff;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-        margin-bottom: 8px;
-    }
-    .sub-text {
-        font-size: 14px;
-        color: #f0f0f0;
-        opacity: 0.9;
-    }
-    .temp-card-main {
-        padding: 16px;
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.4);
-        background: linear-gradient(
-            135deg,
-            rgba(255,255,255,0.15),
-            rgba(255,255,255,0.03)
-        );
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        backdrop-filter: blur(8px);
-    }
-    .temp-card-forecast {
-        padding: 12px;
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.4);
-        background: linear-gradient(
-            135deg,
-            rgba(255,255,255,0.12),
-            rgba(255,255,255,0.02)
-        );
-        text-align: center;
-        min-height: 130px;
-        backdrop-filter: blur(6px);
-        color: #ffffff;
-    }
-    .temp-main-value {
-        font-size: 34px;
-        font-weight: 800;
-        color: #ffffff;
-        text-shadow: 0 2px 6px rgba(0,0,0,0.6);
-    }
-    .temp-main-label {
-        font-size: 14px;
-        opacity: 0.9;
-        color: #f0f0f0;
-    }
-    .temp-date {
-        font-size: 18px;
-        font-weight: 600;
-        color: #ffffff;
-    }
-    .temp-subdate {
-        font-size: 12px;
-        opacity: 0.8;
-        color: #f0f0f0;
-    }
-    .temp-forecast-value {
-        font-size: 24px;
-        font-weight: 700;
-        margin-top: 4px;
-        margin-bottom: 4px;
-    }
-    footer {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
+    }}
+    /* ... copy nốt các style cũ vào đây ... */
     </style>
-""", unsafe_allow_html=True)
+    """
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
+except FileNotFoundError:
+    st.error("Không tìm thấy file ảnh nền. Hãy kiểm tra folder 'assets' đã được upload lên GitHub chưa.")
 
 # ================== HEADER ==================
 st.markdown(
@@ -294,4 +243,5 @@ except Exception as e:
 
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
