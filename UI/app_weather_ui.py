@@ -239,9 +239,10 @@ try:
 
     st.altair_chart(chart_fc, use_container_width=True)
 except Exception as e:
-    st.error(f"Error creating hourly forecast: {e}")
+    st.error(f"Click 'View Hourly' for details!")
 
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
