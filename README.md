@@ -70,7 +70,7 @@ Models are evaluated using standard regression metrics:
 1.  **Clone the repository**
 
     ```bash
-    git clone https://github.com/your-username/hanoi-temp-prediction.git
+    git clone https://github.com/DanhBitoo/hanoi-temp-prediction.git
     cd hanoi-temp-prediction
     ```
 
