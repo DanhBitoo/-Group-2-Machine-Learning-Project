@@ -1,9 +1,3 @@
-Here is a comprehensive, professional **README.md** template written in English for your project. It is structured based on the code and datasets you provided (focusing on LightGBM, Optuna, ClearML, and ONNX integration).
-
-You can copy the code block below directly into your GitHub repository.
-
------
-
 ## Hanoi Temperature Forecasting Project 
 
    
