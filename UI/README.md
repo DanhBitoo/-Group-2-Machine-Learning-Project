@@ -1,11 +1,12 @@
-# Hanoi Weather ML – Daily & Hourly Forecast UI
+Hanoi Weather ML – Daily & Hourly Forecast UI
 
-Dự án này xây dựng một **ứng dụng dự báo thời tiết cho Hà Nội** sử dụng mô hình machine learning (LightGBM) cho cả:
+This project builds a weather forecasting application for Hanoi using machine learning models (LightGBM) for both:
 
-- **Daily**: dự báo nhiệt độ trung bình của **5 ngày tiếp theo**  
-- **Hourly**: dự báo nhiệt độ theo giờ ở các horizon **1h, 6h, 12h, 24h**  
+Daily: forecasting the average temperature for the next 5 days
 
-Frontend là một **Streamlit app** với giao diện giống app thời tiết: hiển thị nhiệt độ thực tế của ngày được chọn, forecast 5 ngày sau, và khi click vào từng ngày forecast sẽ hiện chi tiết dự báo theo giờ.
+Hourly: forecasting hourly temperature at horizons 1h, 6h, 12h, 24h
+
+The frontend is a Streamlit app with a weather-app-style interface: it shows the actual temperature for the selected date, the 5-day forecast, and when clicking on each forecasted day, detailed hourly predictions appear.
 
 ---
 
