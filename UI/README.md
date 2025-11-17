@@ -1,25 +1,24 @@
-Hanoi Weather ML – Daily & Hourly Forecast UI
+# Hanoi Weather ML — Daily & Hourly Forecast UI
 
-This project builds a weather forecasting application for Hanoi using machine learning models (LightGBM) for both:
+This project provides a **machine-learning–powered weather forecasting system for Hanoi**, featuring:
 
-Daily: forecasting the average temperature for the next 5 days
+- **Daily forecasting** — predicts the next **5 days**  
+- **Hourly forecasting** — predicts temperatures at **1h, 6h, 12h, 24h** into the future  
 
-Hourly: forecasting hourly temperature at horizons 1h, 6h, 12h, 24h
-
-The frontend is a Streamlit app with a weather-app-style interface: it shows the actual temperature for the selected date, the 5-day forecast, and when clicking on each forecasted day, detailed hourly predictions appear.
+A Streamlit-based UI displays real historical temperatures, 5-day forecasts, and full hourly breakdowns for each predicted day.
 
 ---
 
-##  Cấu trúc repo
+## Project Structure
 
 ```bash
 .
-├── daily.py               # Pipeline load/FE/train LightGBM cho daily + lưu artifacts
-├── hourly.py              # Pipeline load/FE/train LightGBM cho hourly + lưu artifacts
-├── weather_backend.py     # Backend dùng artifacts để phục vụ UI (daily + hourly)
-├── app_weather_ui.py      # Streamlit app (UI)
-├── Hanoi Daily.csv        # (tuỳ chọn) file dữ liệu daily local, nếu không có sẽ tải từ GitHub
-├── artifacts/             # Thư mục chứa artifacts sau khi train (auto tạo)
+├── daily.py               # Full ML pipeline for daily forecasting + artifacts save/load
+├── hourly.py              # Full ML pipeline for hourly forecasting + artifacts save/load
+├── weather_backend.py     # Backend logic for UI (daily + hourly)
+├── app_weather_ui.py      # Streamlit application
+├── Hanoi Daily.csv        # (Optional) local daily dataset. If missing → auto-download
+├── artifacts/             # Auto-generated model artifacts after training
 │   ├── df_daily.parquet
 │   ├── X_features.parquet
 │   ├── lgbm_models.pkl
@@ -30,117 +29,101 @@ The frontend is a Streamlit app with a weather-app-style interface: it shows the
 │   └── hourly_meta.pkl
 └── README.md
 
-**Lưu ý:**
+**Note:**
 
-* `artifacts/` được tạo tự động sau khi chạy `daily.py` và `hourly.py`.
-* Nếu tồn tại `Hanoi Daily.csv` trong thư mục gốc, `daily.py` sẽ ưu tiên dùng file này; nếu không sẽ tải từ GitHub.
+* `artifacts/` is created automatically after running `daily.py` and `hourly.py`.
+* If `Hanoi Daily.csv` is present, the pipeline uses it. Otherwise it loads the dataset from GitHub.
 
 
 ---
 
-##  Mô hình & pipeline
+## Model & Pipeline Overview
 
-### Daily (daily.py)
+### **Daily Forecasting (daily.py)**
 
-* *Target*: temp (nhiệt độ trung bình ngày)
-* *HORIZON*: 5 (dự báo 5 ngày tiếp theo)
-* *Feature engineering*:
+* *Target*: temp (daily mean temperature)
+* *Forecast Horizon*: next *5 days*
+* *Feature Engineering*:
 
   * Time features: year, month, day_of_year, day_of_week, quarter
   * Cyclical encoding: month, day_of_year, day_of_week
-  * Lag features: lags theo ngày cho các biến như humidity, dew, precip, windspeed,…
-  * Rolling windows: mean/std cho các cửa sổ [7, 14, 28, 56, 84]
-  * Derived features: temp_range, `dewpoint_depression`…
-* *Split theo thời gian*:
+  * Lag features: lags over [1, 3, 5, 7]
+  * Rolling windows: [7, 14, 28, 56, 84]
+  * Derived features:
 
-  * Train ~70%, Val 15%, Test 15%
+    * temp_range = tempmax - tempmin,
+    * dewpoint_depression = temp - dew, etc.
+* *Temporal splitting*:
+
+  * Train 70% — Validation 15% — Test 15%
 * *Model*:
 
-  * 1 LGBMRegressor cho *mỗi horizon* t+1`…t+5`
-  * Train *chỉ trên tập train*
+  * One *LightGBM regressor per horizon* (t+1 → t+5)
+  * Trained *strictly on the train split*
 * *Artifacts*:
 
-  * df_daily.parquet: dữ liệu daily sau preprocess (index = datetime)
-  * X_features.parquet: full features (train + val + test) cho mục đích backend/debug
-  * lgbm_models.pkl: dict {h: model} với h = 1..5
-  * meta.pkl: meta info (TARGET_COL, HORIZON, feature_cols, …)
+  * df_daily.parquet — cleaned dataset
+  * X_features.parquet — full FE output (for backend)
+  * lgbm_models.pkl — {h: model}
+  * meta.pkl — metadata for inference
 
-Hàm quan trọng dùng cho UI:
+### Inference Behavior
 
-* `load_daily_artifacts(...)`
-* `predict_for_date(origin_date, horizon, artifact_dir=ARTIFACT_DIR)`
-* `get_actual_and_forecast_for_ui(...)`
-
-
-predict_for_date **FE lại trên toàn bộ df_daily** (không dropna, không tạo target) nên có thể dự báo cho *bất kỳ ngày nào có trong dữ liệu gốc*, kể cả những ngày đầu/cuối bị cắt khi train.
+predict_for_date() performs *fresh feature engineering* on the full dataset (without dropping edge dates), making it possible to forecast even for the first/last days that were removed during training.
 
 ---
 
-### Hourly (hourly.py)
+### **Hourly Forecasting (hourly.py)**
 
-* *Target*: temp (nhiệt độ theo giờ)
-* *HORIZON*: [1, 6, 12, 24] (giờ phía trước)
-* *Feature engineering*:
+* *Target*: temp (hourly temperature)
+* *Horizons*: [1, 6, 12, 24] hours ahead
+* *Feature Engineering*:
 
-  * Time + cyclical: hour, day_of_week, day_of_year, month, winddir
-  * Lag features: LAGS = [1, 2, 3, 6, 24]
-  * Rolling windows: mean/std cho [3, 6, 12, 24]
-  * Derived features: dewpoint_depression, wind_speed_squared, wind_chill, wind_ratio, severe_proxy, heat_index_approx
-* *Xử lý dữ liệu & missing*:
+  * Cyclical: hour, day_of_week, day_of_year, month, winddir
+  * Lag features: [1, 2, 3, 6, 24]
+  * Rolling windows: [3, 6, 12, 24]
+  * Derived features:
 
-  * Thêm season từ month
-  * FFill windspeed, impute winddir theo (name, season, hour) nếu có
-  * precip → fill 0; visibility → ffill + bfill
-  * Impute solarradiation/solarenergy/uvindex theo logic đêm/ngày & cloudcover
-  * Tạo precip_flag
-* *One-hot encoding*:
+    * dewpoint_depression
+    * wind_speed_squared
+    * wind_chill
+    * wind_ratio
+    * severe_proxy
+    * heat_index_approx
+* *Data Cleaning*:
 
-  * OHE cho icon, season (nếu tồn tại)
-* *Split theo thời gian*:
+  * Add season
+  * Impute windspeed, winddir
+  * Fill precip and visibility
+  * Smart solar variable imputation (night/day logic)
+* *OHE*:
 
-  * Train 70%, Val 15%, Test 15%
+  * Encode icon and season if present
 * *Model*:
 
-  * 1 LGBMRegressor cho mỗi horizon trong [1, 6, 12, 24]
-  * Train *chỉ trên tập train*
+  * One *LightGBM regressor per horizon*
 * *Artifacts*:
 
-  * df_hourly_clean.parquet: dữ liệu hourly sau preprocess
-  * lgbm_hourly_models.pkl: dict {h: model}
-  * hourly_ohe.pkl: OneHotEncoder đã fit
-  * hourly_meta.pkl: meta & metrics
+  * df_hourly_clean.parquet
+  * lgbm_hourly_models.pkl
+  * hourly_ohe.pkl
+  * hourly_meta.pkl
 
-Hàm quan trọng cho UI:
+### Inference Logic
 
-* `load_hourly_artifacts(...)`
-* `predict_hourly_multi_horizon_for_timestamp(origin_ts, artifact_dir=...)`
+Hourly forecasting uses the exact window approach of the original notebook:
 
-
-Khi dự báo tại một origin_ts:
-
-1. Lấy *history ≤ origin_ts*, giữ lại ROWS_NEEDED dòng cuối (dựa trên lag/rolling lớn nhất).
-2. Áp dụng OHE + FE inference (create_hourly_features_for_predictions).
-3. Lấy *hàng cuối cùng* làm input (giống đoạn X_pred_ready = df_pred.tail(1) trong notebook).
-4. Chạy qua các model LightGBM ở horizon [1, 6, 12, 24].
+1. Extract last *ROWS_NEEDED* rows based on max lag/rolling window
+2. Apply OHE → FE inference → take *last row* (tail(1))
+3. Predict with models at [1, 6, 12, 24]
 
 ---
 
-## Cài đặt & chạy
+## Installation
 
-### 1. Yêu cầu
+### 1. Requirements
 
-* Python 3.10+ (khuyến nghị)
-* Các thư viện chính:
-
-  * numpy
-  * pandas
-  * lightgbm
-  * scikit-learn
-  * joblib
-  * streamlit
-  * altair
-
-Bạn có thể tạo file requirements.txt như sau:
+requirements.txt:
 
 text
 numpy
@@ -151,52 +134,37 @@ joblib
 streamlit
 altair
 
-Rồi cài:
+Install dependencies:
 
 pip install -r requirements.txt
 
 ---
 
-### 2. Train & build artifacts
+## 🏋️‍♂️ Train the Models
 
-Trong thư mục repo:
+Run:
 
-# Train daily model + lưu artifacts
 python daily.py
-
-# Train hourly model + lưu artifacts
 python hourly.py
 
-Sau khi chạy xong, thư mục artifacts/ sẽ được tạo với đầy đủ file cần cho UI.
+Artifacts will appear in artifacts/.
 
 ---
 
-### 3. Chạy ứng dụng UI (Streamlit)
+## Run the UI
+
+Start Streamlit:
 
 streamlit run app_weather_ui.py
 
-Sau khi chạy:
+### UI Features
 
-* UI sẽ hiển thị màn hình *chọn ngày* (date picker).
-* Ngày mặc định thường là *ngày cuối cùng* có dữ liệu trong df_daily.
-* Khi chọn một ngày D:
+* Select any valid historical date
+* View *actual daily temperature*
+* View *5-day forecast*
+* Click a forecasted day to view:
 
-  * Bên trái: *nhiệt độ thực tế* của ngày D (daily) + mô tả tổng quan.
-  * Dưới: các *card dự báo 5 ngày tiếp theo* (D+1`…D+5`) với nhiệt độ dự báo.
-  * Bên phải: biểu đồ hourly thật của ngày D (0–23h).
-* Khi *click vào một card ngày forecast* (ví dụ D+3):
-
-  * UI gọi backend hourly → hiển thị chi tiết *dự báo theo giờ* của ngày đó (biểu đồ 0–23h).
+  * Full *hourly* predicted temperature curve
+  * X-axis always from *0 → 23* with proper units
 
 ---
-
-##  Lưu ý kỹ thuật
-
-* *Train vs. Inference*:
-
-  * Daily & hourly đều *train chỉ trên tập train*, validate/test riêng.
-  * Khi inference, *không tái dùng trực tiếp X_train/X_full để tra index như trước*, mà FE lại toàn bộ (hoặc fe trên window lịch sử) để duy trì tính đúng cho cả những ngày/giờ vốn bị drop trong quá trình train.
-* *Xử lý dtime*:
-
-  * df_daily sau preprocess có index = datetime (kiểu Timestamp).
-  * df_hourly_clean giữ cột datetime dạng datetime64[ns].
