@@ -23,7 +23,7 @@ st.set_page_config(
 st.markdown("""
     <style>
     .stApp {
-        background-image: url("https://raw.githubusercontent.com/DanhBitoo/-Group-2-Machine-Learning-Project/refs/heads/main/UI/assets/hanoi1.jpg");
+        background-image: url("https://raw.githubusercontent.com/DanhBitoo/-Group-2-Machine-Learning-Project/main/UI/assets/hanoi1.jpg");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
@@ -294,3 +294,4 @@ except Exception as e:
 
 
     st.markdown('</div>', unsafe_allow_html=True)
+
