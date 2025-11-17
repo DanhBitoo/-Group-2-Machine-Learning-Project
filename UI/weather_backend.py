@@ -16,7 +16,9 @@ from hourly import (
     predict_hourly_multi_horizon_for_timestamp,
 )
 
-ARTIFACT_DIR = Path("artifacts")
+BASE_DIR = Path(__file__).resolve().parent
+
+ARTIFACT_DIR = BASE_DIR / "artifacts"
 
 # =========================================================
 # 1. LOAD ARTIFACTS DAILY
@@ -218,3 +220,4 @@ def get_origin_date_range_for_ui():
     if len(VALID_ORIGIN_DATES) == 0:
         raise RuntimeError("Không có ngày hợp lệ nào trong VALID_ORIGIN_DATES.")
     return VALID_ORIGIN_DATES[0].date(), VALID_ORIGIN_DATES[-1].date()
+
