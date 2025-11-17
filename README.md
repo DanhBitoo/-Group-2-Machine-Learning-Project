@@ -85,6 +85,8 @@ Models are evaluated using standard regression metrics:
 ├── data/
 │   ├── Hanoi Hourly.csv
 │   └── Hanoi Daily.csv
+├── Hanoi_daily_temperature_predict.ipynb
+├── Hanoi_hourly_temperature_predict.ipynb
 ├── README.md
 └── requirements.txt
 ```
